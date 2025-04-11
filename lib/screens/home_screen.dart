@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../widgets/custom_button.dart';
+import 'auth/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -8,6 +10,48 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  final AuthService _authService = AuthService();
+  String _userName = 'User';
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = _authService.getCurrentUser();
+      if (user != null) {
+        String? name = await _authService.getUserName(user.uid);
+        if (name != null) {
+          setState(() {
+            _userName = name;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading user name: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _signOut() async {
+    await _authService.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,14 +60,14 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text('Al-Aqsa Carpooling'),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () {
-              // Will implement refresh functionality later
-            },
+            icon: Icon(Icons.logout),
+            onPressed: _signOut,
           ),
         ],
       ),
-      body: _buildBody(),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : _buildBody(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -31,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentIndex = index;
           });
         },
-        items: const [
+        items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Home',
@@ -47,13 +91,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         selectedItemColor: Theme.of(context).primaryColor,
       ),
-      // // floatingActionButton: FloatingActionButton(
-      // //   backgroundColor: Theme.of(context).primaryColor,
-      // //   child: const Icon(Icons.add),
-      // //   onPressed: () {
-      // //     // Will implement ride creation later
-      // //   },
-      // ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Theme.of(context).primaryColor,
+        child: Icon(Icons.add),
+        onPressed: () {
+          // Will implement ride creation later
+        },
+      ),
     );
   }
 
@@ -75,6 +119,15 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Text(
+            'Welcome, $_userName!',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).primaryColor,
+            ),
+          ),
+          SizedBox(height: 20),
           Icon(
             Icons.directions_car,
             size: 80,
@@ -96,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 32),
             child: CustomButton(
@@ -152,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
           CircleAvatar(
             radius: 50,
             backgroundColor: Theme.of(context).primaryColor,
-            child: const Icon(
+            child: Icon(
               Icons.person,
               size: 50,
               color: Colors.white,
@@ -160,30 +213,28 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           SizedBox(height: 16),
           Text(
-            'User Profile',
+            _userName,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
+              color: Theme.of(context).primaryColor,
             ),
           ),
           SizedBox(height: 8),
           Text(
-            'Profile functionality will be implemented soon',
+            'User Profile',
             style: TextStyle(
+              fontSize: 16,
               color: Colors.grey[600],
             ),
-            textAlign: TextAlign.center,
           ),
           SizedBox(height: 24),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 32),
             child: CustomButton(
-              text: 'Go to Login',
-              onPressed: () {
-                Navigator.pushNamed(context, '/login');
-              },
-              icon: Icons.login,
+              text: 'Sign Out',
+              onPressed: _signOut,
+              icon: Icons.logout,
               isOutlined: true,
             ),
           ),

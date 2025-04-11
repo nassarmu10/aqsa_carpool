@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/custom_button.dart';
-import 'register_screen.dart';
+import '../home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -9,9 +10,9 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
   
-  String _email = '';
-  String _password = '';
+  String _name = '';
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -22,11 +23,29 @@ class _LoginScreenState extends State<LoginScreen> {
         _errorMessage = null;
       });
 
-      // Authentication will be implemented later
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Authentication not implemented yet.';
-      });
+      try {
+        final user = await _authService.signInAnonymously(_name);
+        
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (user != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+          );
+        } else {
+          setState(() {
+            _errorMessage = 'Failed to sign in. Please try again.';
+          });
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Error: ${e.toString()}';
+        });
+      }
     }
   }
 
@@ -47,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 SizedBox(height: 16),
                 Text(
-                  'Sign in to find or offer rides to Al-Aqsa',
+                  'Enter your name to continue',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
@@ -61,47 +80,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       TextFormField(
                         decoration: InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.email),
+                          labelText: 'Your Name',
+                          prefixIcon: Icon(Icons.person),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        keyboardType: TextInputType.emailAddress,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          if (!value.contains('@') || !value.contains('.')) {
-                            return 'Please enter a valid email';
+                            return 'Please enter your name';
                           }
                           return null;
                         },
                         onChanged: (value) {
-                          _email = value;
-                        },
-                      ),
-                      SizedBox(height: 16),
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: Icon(Icons.lock),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        obscureText: true,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
-                          return null;
-                        },
-                        onChanged: (value) {
-                          _password = value;
+                          _name = value;
                         },
                       ),
                       SizedBox(height: 24),
@@ -118,28 +110,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       _isLoading
                           ? CircularProgressIndicator()
                           : CustomButton(
-                              text: 'Login',
+                              text: 'Start Carpooling',
                               onPressed: _login,
-                              icon: Icons.login,
+                              icon: Icons.directions_car,
                             ),
-                      SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('Don\'t have an account?'),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => RegisterScreen(),
-                                ),
-                              );
-                            },
-                            child: Text('Register'),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),

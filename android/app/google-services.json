@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "760318278524",
+    "project_id": "aqsacarpool",
+    "storage_bucket": "aqsacarpool.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:760318278524:android:5e4a6c4f741ecfa50782f9",
+        "android_client_info": {
+          "package_name": "com.example.aqsa_carpool"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcGnpkregR7qmckzsjM9D_9xBUuFetJN4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
