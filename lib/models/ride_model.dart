@@ -8,7 +8,7 @@ class RideModel {
   final String destination;
   final DateTime departureTime;
   final int availableSeats;
-  final double price;
+  // final double price;
   final List<String> passengers;
   final List<String> pendingRequests;
   final String? notes;
@@ -22,7 +22,7 @@ class RideModel {
     required this.destination,
     required this.departureTime,
     required this.availableSeats,
-    required this.price,
+    // required this.price,
     this.passengers = const [],
     this.pendingRequests = const [],
     this.notes,
@@ -38,7 +38,7 @@ class RideModel {
       destination: json['destination'],
       departureTime: (json['departureTime'] as Timestamp).toDate(),
       availableSeats: json['availableSeats'],
-      price: json['price'].toDouble(),
+      // price: json['price'].toDouble(),
       passengers: List<String>.from(json['passengers'] ?? []),
       pendingRequests: List<String>.from(json['pendingRequests'] ?? []),
       notes: json['notes'],
@@ -55,7 +55,7 @@ class RideModel {
       'destination': destination,
       'departureTime': Timestamp.fromDate(departureTime),
       'availableSeats': availableSeats,
-      'price': price,
+      // 'price': price,
       'passengers': passengers,
       'pendingRequests': pendingRequests,
       'notes': notes,

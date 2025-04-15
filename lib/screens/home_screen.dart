@@ -1,3 +1,6 @@
+import 'package:aqsa_carpool/screens/ride/create_ride_screen.dart';
+import 'package:aqsa_carpool/screens/ride/my_rides_screen.dart';
+import 'package:aqsa_carpool/screens/ride/search_ride_screen.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_button.dart';
@@ -116,48 +119,99 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHomeTab() {
     return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Welcome, $_userName!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'What would you like to do today?',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 40),
+            // Image.asset(
+            //   'assets/car_illustration.png', // Add an illustration image to your assets
+            //   height: 180,
+            //   fit: BoxFit.contain,
+            // ),
+            Icon(
+              Icons.directions_car,
+              size: 100,
+              color: Theme.of(context).primaryColor,
+            ),
+            const SizedBox(height: 40),
+            CustomButton(
+              text: 'Offer a Ride',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => CreateRideScreen()),
+                );
+              },
+              icon: Icons.drive_eta,
+            ),
+            const SizedBox(height: 16),
+            CustomButton(
+              text: 'Find a Ride',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SearchRideScreen()),
+                );
+              },
+              icon: Icons.search,
+              isOutlined: true,
+            ),
+            const SizedBox(height: 40),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildStatCard('Rides Offered', '0'),
+                const SizedBox(width: 24),
+                _buildStatCard('Rides Taken', '0'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Welcome, $_userName!',
+            value,
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Theme.of(context).primaryColor,
             ),
           ),
-          SizedBox(height: 20),
-          Icon(
-            Icons.directions_car,
-            size: 80,
-            color: Theme.of(context).primaryColor,
-          ),
-          SizedBox(height: 16),
+          SizedBox(height: 4),
           Text(
-            'No rides available',
+            title,
             style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Create a new ride or search for rides',
-            style: TextStyle(
-              color: Colors.grey[600],
-            ),
-          ),
-          SizedBox(height: 24),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32),
-            child: CustomButton(
-              text: 'Create a Ride',
-              onPressed: () {
-                // Will implement ride creation later
-              },
-              icon: Icons.add,
+              fontSize: 14,
+              color: Colors.grey[700],
             ),
           ),
         ],
@@ -205,13 +259,13 @@ class _HomeScreenState extends State<HomeScreen> {
           CircleAvatar(
             radius: 50,
             backgroundColor: Theme.of(context).primaryColor,
-            child: Icon(
+            child: const Icon(
               Icons.person,
               size: 50,
               color: Colors.white,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             _userName,
             style: TextStyle(
@@ -220,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Theme.of(context).primaryColor,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             'User Profile',
             style: TextStyle(
@@ -228,15 +282,26 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.grey[600],
             ),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 32),
             child: CustomButton(
               text: 'Sign Out',
               onPressed: _signOut,
               icon: Icons.logout,
               isOutlined: true,
             ),
+          ),
+          SizedBox(height: 20),
+          CustomButton(
+            text: 'My Rides',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MyRidesScreen()),
+              );
+            },
+            icon: Icons.directions_car,
           ),
         ],
       ),
