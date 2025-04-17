@@ -1,4 +1,5 @@
 // lib/screens/ride/ride_details_screen.dart
+import 'package:aqsa_carpool/screens/ride/ride_requests_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -256,7 +257,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                     
                     if (_rideData!['notes'] != null && _rideData!['notes'].toString().isNotEmpty) ...[
                       SizedBox(height: 16),
-                      Text(
+                      const Text(
                         'Notes:',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
@@ -306,11 +307,33 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
   Widget _buildActionButton() {
     if (_isDriver) {
-      return CustomButton(
-        text: 'You are the driver',
-        onPressed: () {},
-        icon: Icons.drive_eta,
-        color: Colors.green,
+      int pendingRequestsCount = (_rideData!['pendingRequests'] as List).length;
+
+      return Column(
+        children: [
+          CustomButton(
+            text: 'You are the driver',
+            onPressed: () {},
+            icon: Icons.drive_eta,
+            color: Colors.green,
+          ),
+          if (pendingRequestsCount > 0) ...[
+            SizedBox(height: 16),
+            CustomButton(
+              text: 'View $pendingRequestsCount Pending Requests',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RideRequestsScreen(rideId: widget.rideId),
+                  ),
+                ).then((_) => _loadRideData());
+              },
+              icon: Icons.people,
+              isOutlined: true,
+            ),
+          ],
+        ],
       );
     } else if (_isPassenger) {
       return CustomButton(

@@ -1,6 +1,9 @@
 import 'package:aqsa_carpool/screens/ride/create_ride_screen.dart';
+import 'package:aqsa_carpool/screens/ride/my_requests_screen.dart';
 import 'package:aqsa_carpool/screens/ride/my_rides_screen.dart';
 import 'package:aqsa_carpool/screens/ride/search_ride_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_button.dart';
@@ -16,14 +19,33 @@ class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
   String _userName = 'User';
   bool _isLoading = true;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  int _pendingRequestsCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadUserName();
+    _loadPendingRequests();
+  }
+
+  Future<void> _loadPendingRequests() async {
+    // Only proceed if the widget is still mounted
+    if (!mounted) return;
+    
+    int count = await _getPendingRequestsCount();
+    
+    // Check again before calling setState
+    if (mounted) {
+      setState(() {
+        _pendingRequestsCount = count;
+      });
+    }
   }
 
   Future<void> _loadUserName() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
     });
@@ -32,18 +54,24 @@ class _HomeScreenState extends State<HomeScreen> {
       final user = _authService.getCurrentUser();
       if (user != null) {
         String? name = await _authService.getUserName(user.uid);
-        if (name != null) {
+        
+        // Check if still mounted before updating state
+        if (mounted) {
           setState(() {
-            _userName = name;
+            _userName = name ?? 'User';
+            _isLoading = false;
           });
         }
       }
     } catch (e) {
       print('Error loading user name: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      
+      // Check if still mounted before updating state
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -54,6 +82,31 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (context) => LoginScreen()),
       (route) => false,
     );
+  }
+
+  Future<int> _getPendingRequestsCount() async {
+    try {
+      User? currentUser = _authService.getCurrentUser();
+      if (currentUser == null) return 0;
+      
+      // Get rides where user is driver and has pending requests
+      QuerySnapshot pendingRides = await _firestore
+          .collection('rides')
+          .where('driverId', isEqualTo: currentUser.uid)
+          .get();
+      
+      int totalPendingRequests = 0;
+      
+      for (var doc in pendingRides.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        totalPendingRequests += (data['pendingRequests'] as List).length;
+      }
+      
+      return totalPendingRequests;
+    } catch (e) {
+      print('Error getting pending requests: $e');
+      return 0;
+    }
   }
 
   @override
@@ -78,15 +131,15 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentIndex = index;
           });
         },
-        items: [
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.search),
+          //   label: 'Search',
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
@@ -94,13 +147,42 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         selectedItemColor: Theme.of(context).primaryColor,
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Theme.of(context).primaryColor,
-        child: Icon(Icons.add),
-        onPressed: () {
-          // Will implement ride creation later
-        },
-      ),
+      // floatingActionButton: Stack(
+      //   children: [
+      //     FloatingActionButton(
+      //       backgroundColor: Theme.of(context).primaryColor,
+      //       // child: Icon(Icons.add),
+      //       // onPressed: () {
+      //       //   Navigator.push(
+      //       //     context,
+      //       //     MaterialPageRoute(
+      //       //       builder: (context) => CreateRideScreen(),
+      //       //     ),
+      //       //   ).then((_) => setState(() {}));
+      //       // },
+      //     ),
+      //     if (_pendingRequestsCount > 0)
+      //       Positioned(
+      //         right: 0,
+      //         top: 0,
+      //         child: Container(
+      //           padding: EdgeInsets.all(4),
+      //           decoration: BoxDecoration(
+      //             color: Colors.red,
+      //             shape: BoxShape.circle,
+      //           ),
+      //           child: Text(
+      //             _pendingRequestsCount.toString(),
+      //             style: TextStyle(
+      //               color: Colors.white,
+      //               fontSize: 12,
+      //               fontWeight: FontWeight.bold,
+      //             ),
+      //           ),
+      //         ),
+      //       ),
+      //   ],
+      // ),
     );
   }
 
@@ -108,9 +190,9 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (_currentIndex) {
       case 0:
         return _buildHomeTab();
+      // case 1:
+      //   return _buildSearchTab();
       case 1:
-        return _buildSearchTab();
-      case 2:
         return _buildProfileTab();
       default:
         return _buildHomeTab();
@@ -292,16 +374,34 @@ class _HomeScreenState extends State<HomeScreen> {
               isOutlined: true,
             ),
           ),
-          SizedBox(height: 20),
-          CustomButton(
-            text: 'My Rides',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => MyRidesScreen()),
-              );
-            },
-            icon: Icons.directions_car,
+          SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: CustomButton(
+              text: 'My Rides',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MyRidesScreen()),
+                );
+              },
+              icon: Icons.directions_car,
+            ),
+          ),
+          SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: CustomButton(
+              text: 'My Requests',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MyRequestsScreen()),
+                );
+              },
+              icon: Icons.hourglass_bottom,
+              isOutlined: true,
+            ),
           ),
         ],
       ),
