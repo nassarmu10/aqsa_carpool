@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:osm_nominatim/osm_nominatim.dart';
+import 'dart:async'; // For debounce functionality
 
 class LocationResult {
   final String address;
@@ -99,16 +101,22 @@ class LocationUtils {
     return components.join(', ');
   }
   
-  // Geocode address to get coordinates
+  // Geocode address to get coordinates using OpenStreetMap
   static Future<LocationResult?> geocodeAddress(String address) async {
     try {
-      List<Location> locations = await locationFromAddress(address);
+      final searchResult = await Nominatim.searchByName(
+        query: address,
+        limit: 1,
+        addressDetails: true,
+        extraTags: true,
+        nameDetails: true,
+      );
       
-      if (locations.isNotEmpty) {
-        Location location = locations.first;
+      if (searchResult.isNotEmpty) {
+        final place = searchResult.first;
         return LocationResult(
-          address,
-          GeoPoint(location.latitude, location.longitude)
+          place.displayName,
+          GeoPoint(place.lat, place.lon)
         );
       }
       
@@ -119,134 +127,236 @@ class LocationUtils {
     }
   }
   
-  // Show custom address search dialog
+  // Get address suggestions from OpenStreetMap
+  static Future<List<Place>> getAddressSuggestions(String query) async {
+    if (query.length < 3) return [];
+    
+    try {
+      final searchResult = await Nominatim.searchByName(
+        query: query,
+        limit: 5,
+        addressDetails: true,
+        extraTags: true,
+        nameDetails: true,
+      );
+      
+      return searchResult;
+    } catch (e) {
+      print('Error getting address suggestions: $e');
+      return [];
+    }
+  }
+  
+  // Show custom address search dialog with autocomplete
   static Future<LocationResult?> showAddressSearchDialog(
     BuildContext context, {
     List<String> suggestions = const [],
   }) async {
-    TextEditingController searchController = TextEditingController();
-    List<String> filteredSuggestions = [];
-    List<String> recentSearches = [];
-    
-    // Get recent searches from local storage if needed
-    
-    return showDialog<LocationResult?>(
+    return await showDialog<LocationResult?>(
       context: context,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            void filterSuggestions(String query) {
-              setState(() {
-                if (query.isEmpty) {
-                  filteredSuggestions = [];
-                } else {
-                  filteredSuggestions = suggestions
-                      .where((s) => s.toLowerCase().contains(query.toLowerCase()))
-                      .toList();
-                  
-                  // Add some generated suggestions
-                  if (query.length > 2) {
-                    filteredSuggestions.add('$query Street');
-                    filteredSuggestions.add('$query District');
-                  }
-                  
-                  // Limit to 5 suggestions
-                  filteredSuggestions = filteredSuggestions.take(5).toList();
-                }
-              });
-            }
-            
-            return AlertDialog(
-              title: Text('Find Location'),
-              content: Container(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        labelText: 'Enter address',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: filterSuggestions,
-                    ),
-                    SizedBox(height: 8),
-                    Flexible(
-                      child: ListView(
-                        shrinkWrap: true,
-                        children: [
-                          // Use my current location option
-                          ListTile(
-                            leading: Icon(Icons.my_location, color: Colors.blue),
-                            title: Text('Use my current location'),
-                            onTap: () async {
-                              final locationResult = await getCurrentLocation(context);
-                              Navigator.of(context).pop(locationResult);
-                            },
-                          ),
-                          Divider(),
-                          ...filteredSuggestions.map((suggestion) => ListTile(
-                            leading: Icon(Icons.location_on),
-                            title: Text(suggestion),
-                            onTap: () async {
-                              final locationResult = await geocodeAddress(suggestion);
-                              if (locationResult != null) {
-                                Navigator.of(context).pop(locationResult);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Could not find location')),
-                                );
-                              }
-                            },
-                          )).toList(),
-                          
-                          if (recentSearches.isNotEmpty) ...[
-                            Divider(),
-                            Padding(
-                              padding: EdgeInsets.only(left: 16, top: 8, bottom: 8),
-                              child: Text('Recent Searches', 
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey[600]
-                                ),
-                              ),
-                            ),
-                            ...recentSearches.map((recent) => ListTile(
-                              leading: Icon(Icons.history),
-                              title: Text(recent),
-                              onTap: () async {
-                                final locationResult = await geocodeAddress(recent);
-                                Navigator.of(context).pop(locationResult);
-                              },
-                            )).toList(),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text('CANCEL'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (searchController.text.isNotEmpty) {
-                      final locationResult = await geocodeAddress(searchController.text);
-                      Navigator.of(context).pop(locationResult);
-                    }
-                  },
-                  child: Text('SEARCH'),
-                ),
-              ],
-            );
-          },
+        return AddressSearchDialog(
+          suggestions: suggestions,
         );
       },
+    );
+  }
+}
+
+class AddressSearchDialog extends StatefulWidget {
+  final List<String> suggestions;
+  
+  const AddressSearchDialog({
+    Key? key,
+    this.suggestions = const [],
+  }) : super(key: key);
+
+  @override
+  _AddressSearchDialogState createState() => _AddressSearchDialogState();
+}
+
+class _AddressSearchDialogState extends State<AddressSearchDialog> {
+  final TextEditingController _searchController = TextEditingController();
+  List<Place> _autocompleteResults = [];
+  bool _isLoading = false;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      if (_searchController.text.length >= 3) {
+        _getAutocompleteResults();
+      } else {
+        setState(() {
+          _autocompleteResults = [];
+        });
+      }
+    });
+  }
+
+  Future<void> _getAutocompleteResults() async {
+    if (_searchController.text.length < 3) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final results = await LocationUtils.getAddressSuggestions(_searchController.text);
+      
+      if (mounted) {
+        setState(() {
+          _autocompleteResults = results;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      print('Error getting autocomplete results: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Find Location'),
+      content: Container(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Enter address',
+                prefixIcon: Icon(Icons.search),
+                suffixIcon: _isLoading 
+                    ? Container(
+                        width: 20,
+                        height: 20,
+                        padding: EdgeInsets.all(8),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ) 
+                    : null,
+                border: OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.search,
+            ),
+            SizedBox(height: 8),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  // Use current location option
+                  ListTile(
+                    leading: Icon(Icons.my_location, color: Colors.blue),
+                    title: Text('Use my current location'),
+                    onTap: () async {
+                      final locationResult = await LocationUtils.getCurrentLocation(context);
+                      Navigator.of(context).pop(locationResult);
+                    },
+                  ),
+                  
+                  // Show suggested places
+                  if (_searchController.text.isEmpty && widget.suggestions.isNotEmpty) ...[
+                    Divider(),
+                    Padding(
+                      padding: EdgeInsets.only(left: 16, top: 8, bottom: 8),
+                      child: Text('Suggestions', 
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[600]
+                        ),
+                      ),
+                    ),
+                    ...widget.suggestions.map((suggestion) => ListTile(
+                      leading: Icon(Icons.location_on),
+                      title: Text(suggestion),
+                      onTap: () async {
+                        final locationResult = await LocationUtils.geocodeAddress(suggestion);
+                        if (locationResult != null) {
+                          Navigator.of(context).pop(locationResult);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Could not find location')),
+                          );
+                        }
+                      },
+                    )).toList(),
+                  ],
+                  
+                  // Show autocomplete results
+                  if (_autocompleteResults.isNotEmpty) ...[
+                    Divider(),
+                    ..._autocompleteResults.map((place) => ListTile(
+                      leading: Icon(Icons.location_on),
+                      title: Text(place.displayName),
+                      onTap: () {
+                        Navigator.of(context).pop(LocationResult(
+                          place.displayName,
+                          GeoPoint(place.lat, place.lon)
+                        ));
+                      },
+                    )).toList(),
+                  ],
+                  
+                  // Show no results message
+                  if (_isLoading == false && 
+                      _searchController.text.length >= 3 && 
+                      _autocompleteResults.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        'No locations found',
+                        style: TextStyle(color: Colors.grey[600]),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('CANCEL'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            if (_searchController.text.isNotEmpty) {
+              setState(() {
+                _isLoading = true;
+              });
+              final locationResult = await LocationUtils.geocodeAddress(_searchController.text);
+              setState(() {
+                _isLoading = false;
+              });
+              Navigator.of(context).pop(locationResult);
+            }
+          },
+          child: Text('SEARCH'),
+        ),
+      ],
     );
   }
 }

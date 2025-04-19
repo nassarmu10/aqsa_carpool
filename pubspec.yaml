@@ -36,7 +36,8 @@ dependencies:
   intl: ^0.20.2
   geolocator: ^10.1.0
   geocoding: ^2.1.1
-  flutter_typeahead: ^5.2.0
+  # flutter_typeahead: ^5.2.0
+  osm_nominatim: ^2.0.0
 
 
   # The following adds the Cupertino Icons font to your application.
