@@ -8,10 +8,14 @@ import '../../widgets/custom_button.dart';
 
 class RideDetailsScreen extends StatefulWidget {
   final String rideId;
-  
+  final Map<String, dynamic>? directRouteInfo;
+  final Map<String, dynamic>? pickupRouteInfo;
+
   const RideDetailsScreen({
     Key? key,
     required this.rideId,
+    this.directRouteInfo,
+    this.pickupRouteInfo,
   }) : super(key: key);
 
   @override
@@ -21,7 +25,7 @@ class RideDetailsScreen extends StatefulWidget {
 class _RideDetailsScreenState extends State<RideDetailsScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  
+
   Map<String, dynamic>? _rideData;
   bool _isLoading = true;
   bool _isRequestingRide = false;
@@ -48,10 +52,8 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
       }
 
       // Get ride data
-      DocumentSnapshot rideDoc = await _firestore
-          .collection('rides')
-          .doc(widget.rideId)
-          .get();
+      DocumentSnapshot rideDoc =
+          await _firestore.collection('rides').doc(widget.rideId).get();
 
       if (!rideDoc.exists) {
         throw Exception('Ride not found');
@@ -61,8 +63,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
       // Check user's relationship to this ride
       bool isDriver = rideData['driverId'] == currentUser.uid;
-      bool isPassenger = (rideData['passengers'] as List).contains(currentUser.uid);
-      bool hasPendingRequest = (rideData['pendingRequests'] as List).contains(currentUser.uid);
+      bool isPassenger =
+          (rideData['passengers'] as List).contains(currentUser.uid);
+      bool hasPendingRequest =
+          (rideData['pendingRequests'] as List).contains(currentUser.uid);
 
       setState(() {
         _rideData = rideData;
@@ -76,7 +80,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error loading ride details: ${e.toString()}'),
@@ -88,7 +92,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
   Future<void> _requestRide() async {
     if (_rideData == null) return;
-    
+
     setState(() {
       _isRequestingRide = true;
     });
@@ -100,11 +104,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
       }
 
       // Get user name from Firestore
-      DocumentSnapshot userDoc = await _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-          
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(currentUser.uid).get();
+
       if (!userDoc.exists) {
         throw Exception('User data not found');
       }
@@ -116,9 +118,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
       // Reload ride data
       await _loadRideData();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Ride request sent successfully!'),
           backgroundColor: Colors.green,
         ),
@@ -142,28 +144,29 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: Text('Ride Details')),
-        body: Center(child: CircularProgressIndicator()),
+        appBar: AppBar(title: const Text('Ride Details')),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_rideData == null) {
       return Scaffold(
-        appBar: AppBar(title: Text('Ride Details')),
-        body: Center(
+        appBar: AppBar(title: const Text('Ride Details')),
+        body: const Center(
           child: Text('Ride not found'),
         ),
       );
     }
 
-    DateTime departureTime = (_rideData!['departureTime'] as Timestamp).toDate();
+    DateTime departureTime =
+        (_rideData!['departureTime'] as Timestamp).toDate();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Ride Details'),
+        title: const Text('Ride Details'),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -171,31 +174,31 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
             Card(
               elevation: 2,
               child: Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 30,
                       backgroundColor: Theme.of(context).primaryColor,
-                      child: Icon(
+                      child: const Icon(
                         Icons.person,
                         size: 30,
                         color: Colors.white,
                       ),
                     ),
-                    SizedBox(width: 16),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             _rideData!['driverName'],
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             _isDriver ? 'You are the driver' : 'Driver',
                             style: TextStyle(
@@ -209,69 +212,63 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 16),
-            
+            const SizedBox(height: 16),
+
             // Ride details
             Card(
               elevation: 2,
               child: Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Ride Details',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 16),
-                    _buildDetailRow(Icons.location_on_outlined, 'From', _rideData!['origin']),
-                    SizedBox(height: 12),
-                    _buildDetailRow(Icons.location_on, 'To', _rideData!['destination']),
-                    SizedBox(height: 12),
-                    _buildDetailRow(
-                      Icons.calendar_today, 
-                      'Date', 
-                      DateFormat('EEEE, MMM dd, yyyy').format(departureTime)
-                    ),
-                    SizedBox(height: 12),
-                    _buildDetailRow(
-                      Icons.access_time, 
-                      'Time', 
-                      DateFormat('hh:mm a').format(departureTime)
-                    ),
-                    SizedBox(height: 12),
-                    _buildDetailRow(
-                      Icons.event_seat, 
-                      'Available Seats', 
-                      _rideData!['availableSeats'].toString()
-                    ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(Icons.location_on_outlined, 'From',
+                        _rideData!['originAddress']),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(Icons.location_on, 'To',
+                        _rideData!['destinationAddress']),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(Icons.calendar_today, 'Date',
+                        DateFormat('EEEE, MMM dd, yyyy').format(departureTime)),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(Icons.access_time, 'Time',
+                        DateFormat('hh:mm a').format(departureTime)),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(Icons.event_seat, 'Available Seats',
+                        _rideData!['availableSeats'].toString()),
+                    const SizedBox(height: 12),
                     // _buildDetailRow(
-                    //   Icons.attach_money, 
-                    //   'Price', 
+                    //   Icons.attach_money,
+                    //   'Price',
                     //   '${_rideData!['price']} ILS'
                     // ),
-                    
-                    if (_rideData!['notes'] != null && _rideData!['notes'].toString().isNotEmpty) ...[
-                      SizedBox(height: 16),
+
+                    if (_rideData!['notes'] != null &&
+                        _rideData!['notes'].toString().isNotEmpty) ...[
+                      const SizedBox(height: 16),
                       const Text(
                         'Notes:',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(_rideData!['notes']),
                     ],
                   ],
                 ),
               ),
             ),
-            SizedBox(height: 24),
-            
+            const SizedBox(height: 24),
+
             // Action buttons
             _buildActionButton(),
           ],
@@ -284,7 +281,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     return Row(
       children: [
         Icon(icon, color: Colors.grey[600], size: 20),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Text(
           '$label:',
           style: TextStyle(
@@ -292,11 +289,11 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -318,14 +315,15 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
             color: Colors.green,
           ),
           if (pendingRequestsCount > 0) ...[
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             CustomButton(
               text: 'View $pendingRequestsCount Pending Requests',
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => RideRequestsScreen(rideId: widget.rideId),
+                    builder: (context) =>
+                        RideRequestsScreen(rideId: widget.rideId),
                   ),
                 ).then((_) => _loadRideData());
               },
@@ -352,19 +350,21 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     } else {
       // Check if there are available seats
       int availableSeats = _rideData!['availableSeats'] ?? 0;
-      
+
       return _isRequestingRide
-        ? const Center(child: CircularProgressIndicator())
-        : CustomButton(
-            text: availableSeats > 0 ? 'Request Ride' : 'No Seats Available',
-            onPressed: availableSeats > 0 
-                ? () {
-                    _requestRide();
-                  } 
-                : null,
-            icon: availableSeats > 0 ? Icons.directions_car : Icons.do_not_disturb,
-            color: availableSeats > 0 ? null : Colors.grey,
-          );
+          ? const Center(child: CircularProgressIndicator())
+          : CustomButton(
+              text: availableSeats > 0 ? 'Request Ride' : 'No Seats Available',
+              onPressed: availableSeats > 0
+                  ? () {
+                      _requestRide();
+                    }
+                  : null,
+              icon: availableSeats > 0
+                  ? Icons.directions_car
+                  : Icons.do_not_disturb,
+              color: availableSeats > 0 ? null : Colors.grey,
+            );
     }
   }
 }

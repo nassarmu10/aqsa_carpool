@@ -4,6 +4,8 @@ import '../../widgets/custom_button.dart';
 import '../home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -11,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final AuthService _authService = AuthService();
-  
+
   String _name = '';
   bool _isLoading = false;
   String? _errorMessage;
@@ -25,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       try {
         final user = await _authService.signInAnonymously(_name);
-        
+
         setState(() {
           _isLoading = false;
         });
@@ -55,16 +57,16 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 40),
+                const SizedBox(height: 40),
                 Text(
                   'Al-Aqsa Carpooling',
                   style: Theme.of(context).textTheme.displayLarge,
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Text(
                   'Enter your name to continue',
                   style: TextStyle(
@@ -73,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 40),
+                const SizedBox(height: 40),
                 Form(
                   key: _formKey,
                   child: Column(
@@ -81,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         decoration: InputDecoration(
                           labelText: 'Your Name',
-                          prefixIcon: Icon(Icons.person),
+                          prefixIcon: const Icon(Icons.person),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -96,19 +98,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           _name = value;
                         },
                       ),
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
                       if (_errorMessage != null) ...[
                         Text(
                           _errorMessage!,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.red,
                             fontSize: 14,
                           ),
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                       ],
                       _isLoading
-                          ? CircularProgressIndicator()
+                          ? const CircularProgressIndicator()
                           : CustomButton(
                               text: 'Start Carpooling',
                               onPressed: _login,

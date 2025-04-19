@@ -43,9 +43,9 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need your permission to calculate routes</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We need your permission</string>
 </dict>
 </plist>

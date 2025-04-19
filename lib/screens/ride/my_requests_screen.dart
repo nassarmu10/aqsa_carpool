@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'ride_details_screen.dart';
 
 class MyRequestsScreen extends StatefulWidget {
+  const MyRequestsScreen({super.key});
+
   @override
   _MyRequestsScreenState createState() => _MyRequestsScreenState();
 }
@@ -13,7 +15,7 @@ class MyRequestsScreen extends StatefulWidget {
 class _MyRequestsScreenState extends State<MyRequestsScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  
+
   List<Map<String, dynamic>> _pendingRequests = [];
   bool _isLoading = true;
 
@@ -68,12 +70,12 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       await _firestore.collection('rides').doc(rideId).update({
         'pendingRequests': FieldValue.arrayRemove([currentUser.uid]),
       });
-      
+
       // Reload requests
       await _loadRequests();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Request canceled'),
           backgroundColor: Colors.orange,
         ),
@@ -93,10 +95,10 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('My Ride Requests'),
+        title: const Text('My Ride Requests'),
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : _pendingRequests.isEmpty
               ? Center(
                   child: Column(
@@ -107,7 +109,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                         size: 80,
                         color: Colors.grey[300],
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Text(
                         'No pending requests',
                         style: TextStyle(
@@ -125,12 +127,14 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                     itemCount: _pendingRequests.length,
                     itemBuilder: (context, index) {
                       Map<String, dynamic> ride = _pendingRequests[index];
-                      DateTime departureTime = (ride['departureTime'] as Timestamp).toDate();
+                      DateTime departureTime =
+                          (ride['departureTime'] as Timestamp).toDate();
 
                       return Card(
-                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         child: Padding(
-                          padding: EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -138,25 +142,27 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           '${ride['origin']} to ${ride['destination']}',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        SizedBox(height: 8),
+                                        const SizedBox(height: 8),
                                         Text(
                                           'Driver: ${ride['driverName']}',
                                           style: TextStyle(
                                             color: Colors.grey[700],
                                           ),
                                         ),
-                                        SizedBox(height: 4),
+                                        const SizedBox(height: 4),
                                         Text(
-                                          DateFormat('MMM dd, yyyy - hh:mm a').format(departureTime),
+                                          DateFormat('MMM dd, yyyy - hh:mm a')
+                                              .format(departureTime),
                                           style: TextStyle(
                                             color: Colors.grey[700],
                                           ),
@@ -165,12 +171,13 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                                     ),
                                   ),
                                   Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: Colors.orange.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(16),
                                     ),
-                                    child: Text(
+                                    child: const Text(
                                       'Pending',
                                       style: TextStyle(
                                         color: Colors.orange,
@@ -180,31 +187,34 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                                   ),
                                 ],
                               ),
-                              SizedBox(height: 16),
+                              const SizedBox(height: 16),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   TextButton(
                                     onPressed: () => _cancelRequest(ride['id']),
-                                    child: Text('Cancel Request'),
                                     style: TextButton.styleFrom(
                                       foregroundColor: Colors.red,
                                     ),
+                                    child: Text('Cancel Request'),
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   ElevatedButton(
                                     onPressed: () {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => RideDetailsScreen(rideId: ride['id']),
+                                          builder: (context) =>
+                                              RideDetailsScreen(
+                                                  rideId: ride['id']),
                                         ),
                                       ).then((_) => _loadRequests());
                                     },
-                                    child: Text('View Details'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Theme.of(context).primaryColor,
+                                      backgroundColor:
+                                          Theme.of(context).primaryColor,
                                     ),
+                                    child: Text('View Details'),
                                   ),
                                 ],
                               ),

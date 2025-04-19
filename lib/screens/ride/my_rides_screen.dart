@@ -6,14 +6,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class MyRidesScreen extends StatefulWidget {
+  const MyRidesScreen({super.key});
+
   @override
   _MyRidesScreenState createState() => _MyRidesScreenState();
 }
 
-class _MyRidesScreenState extends State<MyRidesScreen> with SingleTickerProviderStateMixin {
+class _MyRidesScreenState extends State<MyRidesScreen>
+    with SingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  
+
   late TabController _tabController;
   List<Map<String, dynamic>> _myRides = [];
   List<Map<String, dynamic>> _myBookings = [];
@@ -81,7 +84,7 @@ class _MyRidesScreenState extends State<MyRidesScreen> with SingleTickerProvider
       setState(() {
         _isLoading = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error loading rides: ${e.toString()}'),
@@ -95,28 +98,30 @@ class _MyRidesScreenState extends State<MyRidesScreen> with SingleTickerProvider
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('My Rides'),
+        title: const Text('My Rides'),
         bottom: TabBar(
           controller: _tabController,
-          tabs: [
+          tabs: const [
             Tab(text: 'As Driver'),
             Tab(text: 'As Passenger'),
           ],
         ),
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : TabBarView(
               controller: _tabController,
               children: [
                 _buildRidesList(_myRides, 'You haven\'t offered any rides yet'),
-                _buildRidesList(_myBookings, 'You haven\'t booked any rides yet'),
+                _buildRidesList(
+                    _myBookings, 'You haven\'t booked any rides yet'),
               ],
             ),
     );
   }
 
-  Widget _buildRidesList(List<Map<String, dynamic>> rides, String emptyMessage) {
+  Widget _buildRidesList(
+      List<Map<String, dynamic>> rides, String emptyMessage) {
     if (rides.isEmpty) {
       return Center(
         child: Column(
@@ -127,7 +132,7 @@ class _MyRidesScreenState extends State<MyRidesScreen> with SingleTickerProvider
               size: 80,
               color: Colors.grey[300],
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               emptyMessage,
               style: TextStyle(
@@ -147,15 +152,16 @@ class _MyRidesScreenState extends State<MyRidesScreen> with SingleTickerProvider
         itemCount: rides.length,
         itemBuilder: (context, index) {
           Map<String, dynamic> ride = rides[index];
-          DateTime departureTime = (ride['departureTime'] as Timestamp).toDate();
+          DateTime departureTime =
+              (ride['departureTime'] as Timestamp).toDate();
           bool isCompleted = ride['isCompleted'] ?? false;
           bool isPast = departureTime.isBefore(DateTime.now());
-          
+
           return Card(
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             elevation: 2,
             child: ListTile(
-              contentPadding: EdgeInsets.all(16),
+              contentPadding: const EdgeInsets.all(16),
               onTap: () {
                 Navigator.push(
                   context,
@@ -169,7 +175,7 @@ class _MyRidesScreenState extends State<MyRidesScreen> with SingleTickerProvider
                   Expanded(
                     child: Text(
                       '${ride['origin']} to ${ride['destination']}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -177,7 +183,8 @@ class _MyRidesScreenState extends State<MyRidesScreen> with SingleTickerProvider
                   ),
                   if (isCompleted || isPast)
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.grey[300],
                         borderRadius: BorderRadius.circular(12),
@@ -195,12 +202,12 @@ class _MyRidesScreenState extends State<MyRidesScreen> with SingleTickerProvider
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'Departure: ${DateFormat('MMM dd, yyyy - hh:mm a').format(departureTime)}',
                     style: TextStyle(color: Colors.grey[700]),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Seats: ${ride['availableSeats']}',
                     style: TextStyle(
@@ -208,12 +215,12 @@ class _MyRidesScreenState extends State<MyRidesScreen> with SingleTickerProvider
                       color: Theme.of(context).primaryColor,
                     ),
                   ),
-                  if (_tabController.index == 0 && 
+                  if (_tabController.index == 0 &&
                       (ride['pendingRequests'] as List).isNotEmpty) ...[
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       '${(ride['pendingRequests'] as List).length} pending requests',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.orange,
                         fontWeight: FontWeight.bold,
                       ),
@@ -221,7 +228,7 @@ class _MyRidesScreenState extends State<MyRidesScreen> with SingleTickerProvider
                   ],
                 ],
               ),
-              trailing: Icon(Icons.arrow_forward_ios),
+              trailing: const Icon(Icons.arrow_forward_ios),
             ),
           );
         },
