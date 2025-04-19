@@ -654,7 +654,7 @@ class _SearchRideScreenState extends State<SearchRideScreen> {
         DateTime departureTime = (ride['departureTime'] as Timestamp).toDate();
         String rideId = ride['id'];
         String cacheKey = _generateCacheKey(rideId, _originLocation!);
-
+        String userLocation = ride['originAddress'];
         // Get route info from cache if available
         Map<String, dynamic>? directRouteInfo = _routeCache[cacheKey];
         Map<String, dynamic>? pickupRouteInfo = _routeWithStopsCache[cacheKey];
@@ -669,10 +669,10 @@ class _SearchRideScreenState extends State<SearchRideScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => RideDetailsScreen(
-                    rideId: ride['id'],
-                    directRouteInfo: directRouteInfo,
-                    pickupRouteInfo: pickupRouteInfo,
-                  ),
+                      rideId: ride['id'],
+                      directRouteInfo: directRouteInfo,
+                      pickupRouteInfo: pickupRouteInfo,
+                      userRequestLocation: userLocation),
                 ),
               );
             },

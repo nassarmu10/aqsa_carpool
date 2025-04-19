@@ -62,11 +62,21 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 40),
+                Container(
+                  width: MediaQuery.of(context).size.width *
+                      0.7, // 70% of screen width
+                  child: Image.asset(
+                    'assets/logo.png',
+                    fit: BoxFit.contain, // This will maintain aspect ratio
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Text(
                   'Al-Aqsa Carpooling',
                   style: Theme.of(context).textTheme.displayLarge,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(
+                    height: 24), // Reduced spacing between title and subtitle
                 Text(
                   'Enter your name to continue',
                   style: TextStyle(
@@ -75,7 +85,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(
+                    height: 24), // Reduced spacing between subtitle and form
                 Form(
                   key: _formKey,
                   child: Column(

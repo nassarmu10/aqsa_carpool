@@ -10,12 +10,14 @@ class RideDetailsScreen extends StatefulWidget {
   final String rideId;
   final Map<String, dynamic>? directRouteInfo;
   final Map<String, dynamic>? pickupRouteInfo;
+  final String? userRequestLocation;
 
   const RideDetailsScreen({
     Key? key,
     required this.rideId,
     this.directRouteInfo,
     this.pickupRouteInfo,
+    this.userRequestLocation,
   }) : super(key: key);
 
   @override

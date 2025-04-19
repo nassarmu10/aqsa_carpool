@@ -174,7 +174,7 @@ class _MyRidesScreenState extends State<MyRidesScreen>
                 children: [
                   Expanded(
                     child: Text(
-                      '${ride['origin']} to ${ride['destination']}',
+                      '${ride['originAddress']} to ${ride['destinationAddress']}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,

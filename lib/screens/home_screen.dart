@@ -267,14 +267,14 @@ class _HomeScreenState extends State<HomeScreen> {
               isOutlined: true,
             ),
             const SizedBox(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildStatCard('Rides Offered', '0'),
-                const SizedBox(width: 24),
-                _buildStatCard('Rides Taken', '0'),
-              ],
-            ),
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.center,
+            //   children: [
+            //     _buildStatCard('Rides Offered', '0'),
+            //     const SizedBox(width: 24),
+            //     _buildStatCard('Rides Taken', '0'),
+            //   ],
+            // ),
           ],
         ),
       ),
