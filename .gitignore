@@ -31,13 +31,38 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Flutter build directories
+/ios/Flutter/App.framework
+/ios/Flutter/Flutter.framework
+/ios/Flutter/Flutter.podspec
+/ios/ServiceDefinitions.json
+/ios/Runner/GeneratedPluginRegistrant.*
+
+# iOS/macOS related
+ios/Pods/
+ios/.symlinks/
+*.mode1v3
+*.mode2v3
+*.pbxuser
+!default.mode1v3
+!default.mode2v3
+!default.pbxuser
+xcuserdata
+*.xcscmblueprint
+
+# Android Studio and Gradle related
+.gradle/
+android/.idea/
+android/local.properties
+android/gradle.properties
+/android/app/debug
+/android/app/profile
+/android/app/release
+*.hprof
+android/app/build/
+
 # Symbolication related
 app.*.symbols
 
 # Obfuscation related
 app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
