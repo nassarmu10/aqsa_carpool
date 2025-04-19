@@ -18,11 +18,12 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _originController = TextEditingController();
   final TextEditingController _destinationController = TextEditingController();
-  
+
   String _originAddress = '';
   GeoPoint? _originLocation;
   String _destinationAddress = 'Al-Aqsa Mosque';
-  GeoPoint _destinationLocation = GeoPoint(31.7781, 35.2358); // Default Al-Aqsa location
+  GeoPoint _destinationLocation =
+      GeoPoint(31.7781, 35.2358); // Default Al-Aqsa location
   DateTime _departureDate = DateTime.now();
   TimeOfDay _departureTime = TimeOfDay.now();
   int _availableSeats = 3;
@@ -83,7 +84,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
       context,
       suggestions: AppConstants.commonOrigins,
     );
-    
+
     if (result != null) {
       setState(() {
         _originAddress = result.address;
@@ -92,13 +93,13 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
       });
     }
   }
-  
+
   Future<void> _selectDestination() async {
     final result = await LocationUtils.showAddressSearchDialog(
       context,
       suggestions: AppConstants.commonDestinations,
     );
-    
+
     if (result != null) {
       setState(() {
         _destinationAddress = result.address;
@@ -116,7 +117,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
         );
         return;
       }
-      
+
       setState(() {
         _isLoading = true;
       });
@@ -128,11 +129,9 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
         }
 
         // Get user name from Firestore
-        DocumentSnapshot userDoc = await _firestore
-            .collection('users')
-            .doc(currentUser.uid)
-            .get();
-        String driverName = userDoc.exists 
+        DocumentSnapshot userDoc =
+            await _firestore.collection('users').doc(currentUser.uid).get();
+        String driverName = userDoc.exists
             ? (userDoc.data() as Map<String, dynamic>)['name'] ?? 'Unknown'
             : 'Unknown';
 
@@ -174,7 +173,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
         setState(() {
           _isLoading = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to create ride: ${e.toString()}'),
@@ -207,7 +206,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                 ),
               ),
               SizedBox(height: 24),
-              
+
               // Origin field
               TextFormField(
                 controller: _originController,
@@ -240,7 +239,8 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                       avatar: Icon(Icons.place, size: 16),
                       label: Text(commonPlace),
                       onPressed: () async {
-                        final result = await LocationUtils.geocodeAddress(commonPlace);
+                        final result =
+                            await LocationUtils.geocodeAddress(commonPlace);
                         if (result != null) {
                           setState(() {
                             _originAddress = result.address;
@@ -253,7 +253,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                 ],
               ),
               SizedBox(height: 16),
-              
+
               // Destination field
               TextFormField(
                 controller: _destinationController,
@@ -281,12 +281,14 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
               Wrap(
                 spacing: 8,
                 children: [
-                  for (String commonPlace in AppConstants.commonDestinations.take(3))
+                  for (String commonPlace
+                      in AppConstants.commonDestinations.take(3))
                     ActionChip(
                       avatar: Icon(Icons.place, size: 16),
                       label: Text(commonPlace),
                       onPressed: () async {
-                        final result = await LocationUtils.geocodeAddress(commonPlace);
+                        final result =
+                            await LocationUtils.geocodeAddress(commonPlace);
                         if (result != null) {
                           setState(() {
                             _destinationAddress = result.address;
@@ -299,7 +301,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                 ],
               ),
               SizedBox(height: 16),
-              
+
               // Date and time selection
               Row(
                 children: [
@@ -307,7 +309,8 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                     child: GestureDetector(
                       onTap: () => _selectDate(context),
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 15),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey),
                           borderRadius: BorderRadius.circular(4),
@@ -316,7 +319,8 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                           children: [
                             Icon(Icons.calendar_today),
                             SizedBox(width: 8),
-                            Text(DateFormat('MMM dd, yyyy').format(_departureDate)),
+                            Text(DateFormat('MMM dd, yyyy')
+                                .format(_departureDate)),
                           ],
                         ),
                       ),
@@ -327,7 +331,8 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                     child: GestureDetector(
                       onTap: () => _selectTime(context),
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 15),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey),
                           borderRadius: BorderRadius.circular(4),
@@ -345,7 +350,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                 ],
               ),
               SizedBox(height: 16),
-              
+
               // Available seats
               TextFormField(
                 decoration: InputDecoration(
@@ -371,7 +376,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                 },
               ),
               SizedBox(height: 16),
-              
+
               // Notes
               TextFormField(
                 decoration: InputDecoration(
@@ -387,7 +392,7 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                 },
               ),
               SizedBox(height: 24),
-              
+
               // Submit button
               _isLoading
                   ? Center(child: CircularProgressIndicator())
