@@ -1,8 +1,9 @@
-// lib/screens/ride/search_ride_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../widgets/custom_button.dart';
+import '../../utils/constants.dart';
+import '../../utils/location_utils.dart';
 import 'ride_details_screen.dart';
 
 class SearchRideScreen extends StatefulWidget {
@@ -13,14 +14,31 @@ class SearchRideScreen extends StatefulWidget {
 class _SearchRideScreenState extends State<SearchRideScreen> {
   final _formKey = GlobalKey<FormState>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final TextEditingController _originController = TextEditingController();
+  final TextEditingController _destinationController = TextEditingController();
   
-  String _origin = '';
-  String _destination = 'Al-Aqsa Mosque';
+  String _originAddress = '';
+  GeoPoint? _originLocation;
+  String _destinationAddress = 'Al-Aqsa Mosque';
+  GeoPoint _destinationLocation = GeoPoint(31.7781, 35.2358); // Default Al-Aqsa location
   DateTime _selectedDate = DateTime.now();
   
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
   bool _hasSearched = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _destinationController.text = _destinationAddress;
+  }
+
+  @override
+  void dispose() {
+    _originController.dispose();
+    _destinationController.dispose();
+    super.dispose();
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -32,6 +50,36 @@ class _SearchRideScreenState extends State<SearchRideScreen> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
+      });
+    }
+  }
+
+  Future<void> _selectOrigin() async {
+    final result = await LocationUtils.showAddressSearchDialog(
+      context,
+      suggestions: AppConstants.commonOrigins,
+    );
+    
+    if (result != null) {
+      setState(() {
+        _originAddress = result.address;
+        _originLocation = result.geoPoint;
+        _originController.text = result.address;
+      });
+    }
+  }
+  
+  Future<void> _selectDestination() async {
+    final result = await LocationUtils.showAddressSearchDialog(
+      context,
+      suggestions: AppConstants.commonDestinations,
+    );
+    
+    if (result != null) {
+      setState(() {
+        _destinationAddress = result.address;
+        _destinationLocation = result.geoPoint;
+        _destinationController.text = result.address;
       });
     }
   }
@@ -49,31 +97,53 @@ class _SearchRideScreenState extends State<SearchRideScreen> {
         DateTime startOfDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 0, 0);
         DateTime endOfDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 23, 59, 59);
 
-        // Query Firestore for rides
-        QuerySnapshot snapshot = await _firestore
+        // Base query for rides on the selected date
+        Query ridesQuery = _firestore
             .collection('rides')
             .where('departureTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
             .where('departureTime', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
             .where('isCompleted', isEqualTo: false)
-            .where('availableSeats', isGreaterThan: 0)
-            .get();
+            .where('availableSeats', isGreaterThan: 0);
 
-        // Filter by origin and destination (case-insensitive)
+        // Execute the query
+        QuerySnapshot snapshot = await ridesQuery.get();
+
+        // Process results
         List<Map<String, dynamic>> results = [];
         
         for (var doc in snapshot.docs) {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
           
-          String originLower = (data['origin'] as String).toLowerCase();
-          String destinationLower = (data['destination'] as String).toLowerCase();
-          
-          if ((originLower.contains(_origin.toLowerCase()) || _origin.isEmpty) &&
-              (destinationLower.contains(_destination.toLowerCase()) || _destination.isEmpty)) {
-            results.add({
-              'id': doc.id,
-              ...data,
-            });
+          // Filter by destination if searching for a specific one
+          if (_destinationLocation != null) {
+            GeoPoint rideDestination = data['destinationLocation'] ?? GeoPoint(0, 0);
+            // Simple proximity check (can be improved with actual distance calculation)
+            double distanceThreshold = 0.05; // Approximately 5km
+            double latDiff = (_destinationLocation.latitude - rideDestination.latitude).abs();
+            double lngDiff = (_destinationLocation.longitude - rideDestination.longitude).abs();
+            
+            if (latDiff > distanceThreshold || lngDiff > distanceThreshold) {
+              continue; // Skip rides that aren't going to the selected destination area
+            }
           }
+          
+          // Filter by origin if specified
+          if (_originLocation != null) {
+            GeoPoint rideOrigin = data['originLocation'] ?? GeoPoint(0, 0);
+            // Simple proximity check
+            double distanceThreshold = 0.05; // Approximately 5km
+            double latDiff = (_originLocation!.latitude - rideOrigin.latitude).abs();
+            double lngDiff = (_originLocation!.longitude - rideOrigin.longitude).abs();
+            
+            if (latDiff > distanceThreshold || lngDiff > distanceThreshold) {
+              continue; // Skip rides that aren't starting from the selected origin area
+            }
+          }
+          
+          results.add({
+            'id': doc.id,
+            ...data,
+          });
         }
 
         setState(() {
@@ -112,38 +182,85 @@ class _SearchRideScreenState extends State<SearchRideScreen> {
               child: Column(
                 children: [
                   TextFormField(
+                    controller: _originController,
                     decoration: InputDecoration(
                       labelText: 'From',
                       hintText: 'Enter origin (optional)',
                       prefixIcon: Icon(Icons.location_on_outlined),
+                      suffixIcon: IconButton(
+                        icon: Icon(Icons.search),
+                        onPressed: _selectOrigin,
+                        tooltip: 'Search location',
+                      ),
                       border: OutlineInputBorder(),
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        _origin = value;
-                      });
-                    },
+                    readOnly: true,
+                    onTap: _selectOrigin,
+                  ),
+                  SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      for (String commonPlace in AppConstants.commonOrigins.take(3))
+                        ActionChip(
+                          avatar: Icon(Icons.place, size: 16),
+                          label: Text(commonPlace),
+                          onPressed: () async {
+                            final result = await LocationUtils.geocodeAddress(commonPlace);
+                            if (result != null) {
+                              setState(() {
+                                _originAddress = result.address;
+                                _originLocation = result.geoPoint;
+                                _originController.text = result.address;
+                              });
+                            }
+                          },
+                        ),
+                    ],
                   ),
                   SizedBox(height: 16),
                   TextFormField(
+                    controller: _destinationController,
                     decoration: InputDecoration(
                       labelText: 'To',
                       hintText: 'Enter destination',
                       prefixIcon: Icon(Icons.location_on),
+                      suffixIcon: IconButton(
+                        icon: Icon(Icons.search),
+                        onPressed: _selectDestination,
+                        tooltip: 'Search location',
+                      ),
                       border: OutlineInputBorder(),
                     ),
-                    initialValue: _destination,
+                    readOnly: true,
+                    onTap: _selectDestination,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter a destination';
+                        return 'Please select a destination';
                       }
                       return null;
                     },
-                    onChanged: (value) {
-                      setState(() {
-                        _destination = value;
-                      });
-                    },
+                  ),
+                  SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      for (String commonPlace in AppConstants.commonDestinations.take(3))
+                        ActionChip(
+                          avatar: Icon(Icons.place, size: 16),
+                          label: Text(commonPlace),
+                          onPressed: () async {
+                            final result = await LocationUtils.geocodeAddress(commonPlace);
+                            if (result != null) {
+                              setState(() {
+                                _destinationAddress = result.address;
+                                _destinationLocation = result.geoPoint;
+                                _destinationController.text = result.address;
+                              });
+                            }
+                          },
+                        ),
+                    ],
                   ),
                   SizedBox(height: 16),
                   GestureDetector(
@@ -262,7 +379,7 @@ class _SearchRideScreenState extends State<SearchRideScreen> {
               );
             },
             title: Text(
-              '${ride['origin']} to ${ride['destination']}',
+              '${ride['originAddress']} to ${ride['destinationAddress']}',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,

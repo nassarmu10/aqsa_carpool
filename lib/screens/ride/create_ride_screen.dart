@@ -1,9 +1,10 @@
-// lib/screens/ride/create_ride_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/custom_button.dart';
+import '../../utils/constants.dart';
+import '../../utils/location_utils.dart';
 import '../../models/ride_model.dart';
 
 class CreateRideScreen extends StatefulWidget {
@@ -15,15 +16,31 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
   final _formKey = GlobalKey<FormState>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final TextEditingController _originController = TextEditingController();
+  final TextEditingController _destinationController = TextEditingController();
   
-  String _origin = '';
-  String _destination = 'Al-Aqsa Mosque';
+  String _originAddress = '';
+  GeoPoint? _originLocation;
+  String _destinationAddress = 'Al-Aqsa Mosque';
+  GeoPoint _destinationLocation = GeoPoint(31.7781, 35.2358); // Default Al-Aqsa location
   DateTime _departureDate = DateTime.now();
   TimeOfDay _departureTime = TimeOfDay.now();
   int _availableSeats = 3;
-  // double _price = 0.0;
   String? _notes;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _destinationController.text = _destinationAddress;
+  }
+
+  @override
+  void dispose() {
+    _originController.dispose();
+    _destinationController.dispose();
+    super.dispose();
+  }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -61,8 +78,45 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
     );
   }
 
+  Future<void> _selectOrigin() async {
+    final result = await LocationUtils.showAddressSearchDialog(
+      context,
+      suggestions: AppConstants.commonOrigins,
+    );
+    
+    if (result != null) {
+      setState(() {
+        _originAddress = result.address;
+        _originLocation = result.geoPoint;
+        _originController.text = result.address;
+      });
+    }
+  }
+  
+  Future<void> _selectDestination() async {
+    final result = await LocationUtils.showAddressSearchDialog(
+      context,
+      suggestions: AppConstants.commonDestinations,
+    );
+    
+    if (result != null) {
+      setState(() {
+        _destinationAddress = result.address;
+        _destinationLocation = result.geoPoint;
+        _destinationController.text = result.address;
+      });
+    }
+  }
+
   Future<void> _createRide() async {
     if (_formKey.currentState!.validate()) {
+      if (_originLocation == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Please select a valid origin location')),
+        );
+        return;
+      }
+      
       setState(() {
         _isLoading = true;
       });
@@ -82,15 +136,16 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
             ? (userDoc.data() as Map<String, dynamic>)['name'] ?? 'Unknown'
             : 'Unknown';
 
-        // Create ride document
+        // Create ride document with GeoPoints
         DocumentReference rideRef = await _firestore.collection('rides').add({
           'driverId': currentUser.uid,
           'driverName': driverName,
-          'origin': _origin,
-          'destination': _destination,
+          'originAddress': _originAddress,
+          'originLocation': _originLocation,
+          'destinationAddress': _destinationAddress,
+          'destinationLocation': _destinationLocation,
           'departureTime': Timestamp.fromDate(_combineDateTime()),
           'availableSeats': _availableSeats,
-          // 'price': _price,
           'notes': _notes,
           'passengers': [],
           'pendingRequests': [],
@@ -155,46 +210,93 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
               
               // Origin field
               TextFormField(
+                controller: _originController,
                 decoration: InputDecoration(
                   labelText: 'Origin',
                   hintText: 'Where are you starting from?',
                   prefixIcon: Icon(Icons.location_on_outlined),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.search),
+                    onPressed: _selectOrigin,
+                    tooltip: 'Search location',
+                  ),
                   border: OutlineInputBorder(),
                 ),
+                readOnly: true,
+                onTap: _selectOrigin,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter an origin';
+                    return 'Please select an origin';
                   }
                   return null;
                 },
-                onChanged: (value) {
-                  setState(() {
-                    _origin = value;
-                  });
-                },
+              ),
+              SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (String commonPlace in AppConstants.commonOrigins.take(3))
+                    ActionChip(
+                      avatar: Icon(Icons.place, size: 16),
+                      label: Text(commonPlace),
+                      onPressed: () async {
+                        final result = await LocationUtils.geocodeAddress(commonPlace);
+                        if (result != null) {
+                          setState(() {
+                            _originAddress = result.address;
+                            _originLocation = result.geoPoint;
+                            _originController.text = result.address;
+                          });
+                        }
+                      },
+                    ),
+                ],
               ),
               SizedBox(height: 16),
               
               // Destination field
               TextFormField(
+                controller: _destinationController,
                 decoration: InputDecoration(
                   labelText: 'Destination',
                   hintText: 'Where are you going?',
                   prefixIcon: Icon(Icons.location_on),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.search),
+                    onPressed: _selectDestination,
+                    tooltip: 'Search location',
+                  ),
                   border: OutlineInputBorder(),
                 ),
-                initialValue: _destination,
+                readOnly: true,
+                onTap: _selectDestination,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a destination';
+                    return 'Please select a destination';
                   }
                   return null;
                 },
-                onChanged: (value) {
-                  setState(() {
-                    _destination = value;
-                  });
-                },
+              ),
+              SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (String commonPlace in AppConstants.commonDestinations.take(3))
+                    ActionChip(
+                      avatar: Icon(Icons.place, size: 16),
+                      label: Text(commonPlace),
+                      onPressed: () async {
+                        final result = await LocationUtils.geocodeAddress(commonPlace);
+                        if (result != null) {
+                          setState(() {
+                            _destinationAddress = result.address;
+                            _destinationLocation = result.geoPoint;
+                            _destinationController.text = result.address;
+                          });
+                        }
+                      },
+                    ),
+                ],
               ),
               SizedBox(height: 16),
               
@@ -268,32 +370,6 @@ class _CreateRideScreenState extends State<CreateRideScreen> {
                   });
                 },
               ),
-              SizedBox(height: 16),
-              
-              // Price
-              // TextFormField(
-              //   decoration: InputDecoration(
-              //     labelText: 'Price (ILS)',
-              //     prefixIcon: Icon(Icons.attach_money),
-              //     border: OutlineInputBorder(),
-              //   ),
-              //   keyboardType: TextInputType.numberWithOptions(decimal: true),
-              //   initialValue: _price.toString(),
-              //   validator: (value) {
-              //     if (value == null || value.isEmpty) {
-              //       return 'Please enter a price';
-              //     }
-              //     if (double.tryParse(value) == null) {
-              //       return 'Please enter a valid price';
-              //     }
-              //     return null;
-              //   },
-              //   onChanged: (value) {
-              //     setState(() {
-              //       _price = double.tryParse(value) ?? _price;
-              //     });
-              //   },
-              // ),
               SizedBox(height: 16),
               
               // Notes

@@ -1,14 +1,16 @@
+// lib/models/ride_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RideModel {
   final String id;
   final String driverId;
   final String driverName;
-  final String origin;
-  final String destination;
+  final String originAddress;      // Human-readable address
+  final GeoPoint originLocation;   // GeoPoint for mapping/calculations
+  final String destinationAddress; // Human-readable address
+  final GeoPoint destinationLocation; // GeoPoint for mapping/calculations
   final DateTime departureTime;
   final int availableSeats;
-  // final double price;
   final List<String> passengers;
   final List<String> pendingRequests;
   final String? notes;
@@ -18,11 +20,12 @@ class RideModel {
     required this.id,
     required this.driverId,
     required this.driverName,
-    required this.origin,
-    required this.destination,
+    required this.originAddress,
+    required this.originLocation,
+    required this.destinationAddress,
+    required this.destinationLocation,
     required this.departureTime,
     required this.availableSeats,
-    // required this.price,
     this.passengers = const [],
     this.pendingRequests = const [],
     this.notes,
@@ -34,11 +37,12 @@ class RideModel {
       id: json['id'],
       driverId: json['driverId'],
       driverName: json['driverName'],
-      origin: json['origin'],
-      destination: json['destination'],
+      originAddress: json['originAddress'],
+      originLocation: json['originLocation'],
+      destinationAddress: json['destinationAddress'],
+      destinationLocation: json['destinationLocation'],
       departureTime: (json['departureTime'] as Timestamp).toDate(),
       availableSeats: json['availableSeats'],
-      // price: json['price'].toDouble(),
       passengers: List<String>.from(json['passengers'] ?? []),
       pendingRequests: List<String>.from(json['pendingRequests'] ?? []),
       notes: json['notes'],
@@ -51,11 +55,12 @@ class RideModel {
       'id': id,
       'driverId': driverId,
       'driverName': driverName,
-      'origin': origin,
-      'destination': destination,
+      'originAddress': originAddress,
+      'originLocation': originLocation,
+      'destinationAddress': destinationAddress,
+      'destinationLocation': destinationLocation,
       'departureTime': Timestamp.fromDate(departureTime),
       'availableSeats': availableSeats,
-      // 'price': price,
       'passengers': passengers,
       'pendingRequests': pendingRequests,
       'notes': notes,
