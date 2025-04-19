@@ -94,10 +94,7 @@ class OpenRouteService {
   /// Get route summary information
   Map<String, dynamic> getRouteSummary(Map<String, dynamic> routeData) {
     try {
-      print('SIIIIIIIIIIIII');
       final features = routeData['routes'][0];
-      print(features);
-      print('SIIIIIIIIIIIII');
 
       var totalDistance = features["summary"]["distance"];
       var totalDuration = features["summary"]["duration"];

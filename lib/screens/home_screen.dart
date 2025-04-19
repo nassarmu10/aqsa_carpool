@@ -115,7 +115,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Al-Aqsa Carpooling'),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Al-Aqsa Carpooling'), // Optional: keep text or remove it
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -230,10 +235,13 @@ class _HomeScreenState extends State<HomeScreen> {
             //   height: 180,
             //   fit: BoxFit.contain,
             // ),
-            Icon(
-              Icons.directions_car,
-              size: 100,
-              color: Theme.of(context).primaryColor,
+            Container(
+              width: MediaQuery.of(context).size.width *
+                  0.7, // 70% of screen width
+              child: Image.asset(
+                'assets/logo.png',
+                fit: BoxFit.contain, // This will maintain aspect ratio
+              ),
             ),
             const SizedBox(height: 40),
             CustomButton(
