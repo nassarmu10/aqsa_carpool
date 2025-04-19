@@ -96,6 +96,7 @@ class OpenRouteService {
     try {
       print('SIIIIIIIIIIIII');
       final features = routeData['routes'][0];
+      print(features);
       print('SIIIIIIIIIIIII');
 
       var totalDistance = features["summary"]["distance"];
@@ -195,6 +196,10 @@ class _SearchRideScreenState extends State<SearchRideScreen> {
     }
   }
 
+  String _generateCacheKey(String rideId, GeoPoint originLocation) {
+    return '$rideId-${originLocation.latitude}-${originLocation.longitude}';
+  }
+
   Future<void> _selectDestination() async {
     final result = await LocationUtils.showAddressSearchDialog(
       context,
@@ -226,11 +231,13 @@ class _SearchRideScreenState extends State<SearchRideScreen> {
       for (var ride in _searchResults) {
         String rideId = ride['id'];
 
+        String cacheKey = _generateCacheKey(rideId, _originLocation!);
+
         // Skip if we already have both routes in cache
-        if (_routeCache.containsKey(rideId) &&
-            _routeWithStopsCache.containsKey(rideId)) {
-          newRouteCache[rideId] = _routeCache[rideId]!;
-          newRouteWithStopsCache[rideId] = _routeWithStopsCache[rideId]!;
+        if (_routeCache.containsKey(cacheKey) &&
+            _routeWithStopsCache.containsKey(cacheKey)) {
+          newRouteCache[cacheKey] = _routeCache[cacheKey]!;
+          newRouteWithStopsCache[cacheKey] = _routeWithStopsCache[cacheKey]!;
           continue;
         }
 
@@ -245,20 +252,20 @@ class _SearchRideScreenState extends State<SearchRideScreen> {
 
         try {
           // Calculate direct route (from ride origin to ride destination)
-          if (!_routeCache.containsKey(rideId)) {
+          if (!_routeCache.containsKey(cacheKey)) {
             final routeData = await _routeService.getRoute(
               startPoint: rideStartPoint,
               endPoint: rideEndPoint,
             );
 
             final summary = _routeService.getRouteSummary(routeData);
-            newRouteCache[rideId] = summary;
+            newRouteCache[cacheKey] = summary;
           } else {
-            newRouteCache[rideId] = _routeCache[rideId]!;
+            newRouteCache[cacheKey] = _routeCache[cacheKey]!;
           }
 
           // Calculate route with user's location as a stop
-          if (!_routeWithStopsCache.containsKey(rideId)) {
+          if (!_routeWithStopsCache.containsKey(cacheKey)) {
             // Add user's current location as a stop
             LatLng userLocation =
                 LatLng(_originLocation!.latitude, _originLocation!.longitude);
@@ -271,21 +278,21 @@ class _SearchRideScreenState extends State<SearchRideScreen> {
 
             final summaryWithStop =
                 _routeService.getRouteSummary(routeWithStop);
-            newRouteWithStopsCache[rideId] = summaryWithStop;
+            newRouteWithStopsCache[cacheKey] = summaryWithStop;
           } else {
-            newRouteWithStopsCache[rideId] = _routeWithStopsCache[rideId]!;
+            newRouteWithStopsCache[cacheKey] = _routeWithStopsCache[cacheKey]!;
           }
         } catch (e) {
           print('Error calculating route for ride $rideId: $e');
           // Add placeholder for failed route calculations
-          if (!newRouteCache.containsKey(rideId)) {
-            newRouteCache[rideId] = {
+          if (!newRouteCache.containsKey(cacheKey)) {
+            newRouteCache[cacheKey] = {
               'formatted': {'distance': 'N/A', 'duration': 'N/A'},
               'error': true
             };
           }
-          if (!newRouteWithStopsCache.containsKey(rideId)) {
-            newRouteWithStopsCache[rideId] = {
+          if (!newRouteWithStopsCache.containsKey(cacheKey)) {
+            newRouteWithStopsCache[cacheKey] = {
               'formatted': {'distance': 'N/A', 'duration': 'N/A'},
               'error': true
             };
@@ -649,10 +656,11 @@ class _SearchRideScreenState extends State<SearchRideScreen> {
         Map<String, dynamic> ride = _searchResults[index];
         DateTime departureTime = (ride['departureTime'] as Timestamp).toDate();
         String rideId = ride['id'];
+        String cacheKey = _generateCacheKey(rideId, _originLocation!);
 
         // Get route info from cache if available
-        Map<String, dynamic>? directRouteInfo = _routeCache[rideId];
-        Map<String, dynamic>? pickupRouteInfo = _routeWithStopsCache[rideId];
+        Map<String, dynamic>? directRouteInfo = _routeCache[cacheKey];
+        Map<String, dynamic>? pickupRouteInfo = _routeWithStopsCache[cacheKey];
 
         return Card(
           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),

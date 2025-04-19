@@ -10,6 +10,8 @@ import '../widgets/custom_button.dart';
 import 'auth/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -32,9 +34,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadPendingRequests() async {
     // Only proceed if the widget is still mounted
     if (!mounted) return;
-    
+
     int count = await _getPendingRequestsCount();
-    
+
     // Check again before calling setState
     if (mounted) {
       setState(() {
@@ -45,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadUserName() async {
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
     });
@@ -54,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final user = _authService.getCurrentUser();
       if (user != null) {
         String? name = await _authService.getUserName(user.uid);
-        
+
         // Check if still mounted before updating state
         if (mounted) {
           setState(() {
@@ -65,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       print('Error loading user name: $e');
-      
+
       // Check if still mounted before updating state
       if (mounted) {
         setState(() {
@@ -88,20 +90,20 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       User? currentUser = _authService.getCurrentUser();
       if (currentUser == null) return 0;
-      
+
       // Get rides where user is driver and has pending requests
       QuerySnapshot pendingRides = await _firestore
           .collection('rides')
           .where('driverId', isEqualTo: currentUser.uid)
           .get();
-      
+
       int totalPendingRequests = 0;
-      
+
       for (var doc in pendingRides.docs) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
         totalPendingRequests += (data['pendingRequests'] as List).length;
       }
-      
+
       return totalPendingRequests;
     } catch (e) {
       print('Error getting pending requests: $e');
@@ -113,16 +115,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Al-Aqsa Carpooling'),
+        title: const Text('Al-Aqsa Carpooling'),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
             onPressed: _signOut,
           ),
         ],
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : _buildBody(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -288,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Theme.of(context).primaryColor,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             title,
             style: TextStyle(
@@ -311,7 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
             size: 80,
             color: Theme.of(context).primaryColor,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'Search for rides',
             style: TextStyle(
@@ -320,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.grey[600],
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             'Search functionality will be implemented soon',
             style: TextStyle(
@@ -374,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
               isOutlined: true,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: CustomButton(
@@ -388,7 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.directions_car,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: CustomButton(
